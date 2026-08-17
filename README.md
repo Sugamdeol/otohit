@@ -52,7 +52,8 @@ Then visit `http://localhost:10000/healthz`.
 - `render.yaml` — Render Blueprint configured as a free Web Service.
 - `Dockerfile` — wraps the official `otohits/app` image.
 - `healthcheck.go` — minimal port/health endpoint.
-- `docker-entrypoint.sh` — starts the listener, then launches the OtoHits client.
+- `docker-entrypoint.sh` — starts the listener and an Xvfb display, writes the
+  container-safe client settings, then supervises the OtoHits client.
 
 ## Troubleshooting
 
@@ -70,11 +71,18 @@ Every startup step is logged with a `[docker-entrypoint-web]` prefix — check
   your key. The upstream image's original entrypoint is what converts the
   `APPLICATION_KEY` environment variable into client configuration, and this
   repository replaces that entrypoint. The wrapper therefore writes an
-  `otohits.ini` (`/login:<key>` plus `/autoupdate`) next to the client binary
-  before launching it. If you still see this error, make sure the
+  `otohits.ini` (`/login:<key>`, `/nosandbox`, and `/autoupdate`) next to the
+  client binary before launching it. If you still see this error, make sure the
   `APPLICATION_KEY` environment variable is set on the service (see below) —
-  the startup logs will say `wrote otohits.ini (login + autoupdate) to ...`
-  when the key was picked up.
+  the startup logs will say `wrote otohits.ini ...` when the key was picked up.
+- **`Unable to receive response from the viewer in time, trying to start viewer
+  again...`** — `otohits-viewer` is based on Chromium and requires an X display
+  even though it has no visible window. This wrapper now reproduces both parts
+  of the official Docker launch setup: it starts an Xvfb virtual display and
+  adds `/nosandbox` to `otohits.ini`. Look for `virtual display :51 is ready`
+  before the client launch line. If Xvfb cannot start, its output is copied into
+  the Render log with an `[xvfb]` prefix instead of allowing a silent viewer
+  restart loop.
 - **Warning that `APPLICATION_KEY` is not set** — add it under your service's
   **Environment** tab in Render (get it from your
   [OtoHits Application page](https://www.otohits.net/account/app)) and

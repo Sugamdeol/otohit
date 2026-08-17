@@ -12,8 +12,8 @@ COPY --from=health-build /out/otohit-health /usr/local/bin/otohit-health
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint-web
 RUN chmod 755 /usr/local/bin/docker-entrypoint-web
 
-# The wrapper starts the HTTP listener, then launches the OtoHits client. It
-# replaces the upstream ENTRYPOINT, so if the upstream CMD is empty (it is for
-# `docker run -e APPLICATION_KEY=... otohits/app:latest`), the wrapper locates
-# and execs the client binary itself instead of exiting immediately.
+# The wrapper starts the HTTP listener and the Xvfb display required by the
+# Chromium-based OtoHits viewer, then supervises the client. It replaces the
+# upstream ENTRYPOINT, so it also reproduces the upstream launcher's essential
+# /nosandbox setting and locates the client when the upstream CMD is empty.
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint-web"]
