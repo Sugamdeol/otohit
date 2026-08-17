@@ -12,6 +12,8 @@ COPY --from=health-build /out/otohit-health /usr/local/bin/otohit-health
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint-web
 RUN chmod 755 /usr/local/bin/docker-entrypoint-web
 
-# Preserve the upstream image CMD. The wrapper starts the HTTP listener and
-# then execs that command, so the OtoHits client remains the main process.
+# The wrapper starts the HTTP listener, then launches the OtoHits client. It
+# replaces the upstream ENTRYPOINT, so if the upstream CMD is empty (it is for
+# `docker run -e APPLICATION_KEY=... otohits/app:latest`), the wrapper locates
+# and execs the client binary itself instead of exiting immediately.
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint-web"]

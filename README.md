@@ -52,4 +52,26 @@ Then visit `http://localhost:10000/healthz`.
 - `render.yaml` — Render Blueprint configured as a free Web Service.
 - `Dockerfile` — wraps the official `otohits/app` image.
 - `healthcheck.go` — minimal port/health endpoint.
-- `docker-entrypoint.sh` — starts the listener, then executes the upstream image command.
+- `docker-entrypoint.sh` — starts the listener, then launches the OtoHits client.
+
+## Troubleshooting
+
+Every startup step is logged with a `[docker-entrypoint-web]` prefix — check
+**Logs** in the Render dashboard first.
+
+- **`Application exited early` right after `Deploying...`** — the previous
+  version of this repository replaced the upstream image's `ENTRYPOINT`, and
+  because `otohits/app:latest` is normally started with no container command
+  (`docker run -e APPLICATION_KEY=... otohits/app:latest`), nothing was left
+  to execute and the container exited immediately. The current entrypoint
+  locates the client binary inside the image when no command is inherited.
+- **Warning that `APPLICATION_KEY` is not set** — add it under your service's
+  **Environment** tab in Render (get it from your
+  [OtoHits Application page](https://www.otohits.net/account/app)) and
+  redeploy. The client exits immediately without it.
+- **"could not find the OtoHits client binary"** — the upstream image layout
+  changed. Run
+  `docker image inspect otohits/app:latest --format '{{json .Config}}'` to see
+  the image's original `Entrypoint`/`Cmd`, then set that command (without the
+  entrypoint parts) as the service's **Docker Command** override in Render, or
+  update the candidate list in `docker-entrypoint.sh`.
