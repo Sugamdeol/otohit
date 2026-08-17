@@ -65,6 +65,16 @@ Every startup step is logged with a `[docker-entrypoint-web]` prefix — check
   (`docker run -e APPLICATION_KEY=... otohits/app:latest`), nothing was left
   to execute and the container exited immediately. The current entrypoint
   locates the client binary inside the image when no command is inherited.
+- **`Error: missing email or password` / `No Application key found in
+  otohits.ini` / `Error while reading AppKey: EOF`** — the client never saw
+  your key. The upstream image's original entrypoint is what converts the
+  `APPLICATION_KEY` environment variable into client configuration, and this
+  repository replaces that entrypoint. The wrapper therefore writes an
+  `otohits.ini` (`/login:<key>` plus `/autoupdate`) next to the client binary
+  before launching it. If you still see this error, make sure the
+  `APPLICATION_KEY` environment variable is set on the service (see below) —
+  the startup logs will say `wrote otohits.ini (login + autoupdate) to ...`
+  when the key was picked up.
 - **Warning that `APPLICATION_KEY` is not set** — add it under your service's
   **Environment** tab in Render (get it from your
   [OtoHits Application page](https://www.otohits.net/account/app)) and
