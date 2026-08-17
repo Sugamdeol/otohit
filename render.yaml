@@ -1,26 +1,16 @@
-# Render Blueprint — deploys the OtoHits app on Render.
-#
-# Usage:
-#   1. Push this repo to GitHub.
-#   2. In Render, go to "New" -> "Blueprint" and select the repo.
-#   3. When prompted, paste your APPLICATION_KEY (from https://www.otohits.net/account/app).
-#   4. Render creates the service and starts it.
-#
-# NOTE: the otohits/app image is a background traffic client and does NOT
-# listen on an HTTP port, so it is deployed as a "Background Worker" rather
-# than a "Web Service" (Render requires web services to bind $PORT).
+# Render Blueprint — deploys OtoHits as a Web Service on Render's free plan.
+# The Dockerfile keeps the official client as the main process and adds a
+# minimal /healthz endpoint because Render Web Services must bind $PORT.
 services:
-  - type: worker
+  - type: web
     name: otohits
-    runtime: image
+    runtime: docker
     plan: free
     region: oregon
-    image:
-      url: docker.io/otohits/app:latest
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /healthz
     envVars:
       - key: APPLICATION_KEY
-        # `sync: false` keeps the key out of the repo; Render stores it as a
-        # secret and asks for it once during the Blueprint review step.
-        # To hardcode it instead, replace the line below with:
-        #   value: a6c4c312-c270-42c8-8ae5-31759f337ecc
+        # Render will prompt for this value during Blueprint setup and store it
+        # as a secret. Never put a real application key in this repository.
         sync: false

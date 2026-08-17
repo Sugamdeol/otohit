@@ -1,37 +1,55 @@
 # otohit
 
-Run the [OtoHits](https://www.otohits.net) traffic-exchange client on [Render](https://render.com) as a container.
+Deploy the official [OtoHits](https://www.otohits.net) traffic-exchange client as a **Render Web Service**.
 
-## What it does
+The upstream `otohits/app` image is a background client and does not listen on an HTTP port. Render Web Services require a process that binds to `$PORT`, including on the free plan. This repository adds a tiny, public status endpoint while preserving the upstream client as the main process:
 
-The [`otohits/app`](https://hub.docker.com/r/otohits/app) Docker image is the official OtoHits client. It runs in the background and exchanges traffic for your account using an application key. Its only required setting is:
+- `GET /` or `GET /healthz` returns a non-sensitive JSON status response.
+- The OtoHits client still receives your `APPLICATION_KEY` normally.
+- No account data or application key is exposed by the endpoint.
 
-| Variable        | Description                                                            |
-| --------------- | ---------------------------------------------------------------------- |
-| `APPLICATION_KEY` | Your application key from https://www.otohits.net/account/app |
-
-## Deploy to Render (Blueprint)
+## Deploy on Render's free tier
 
 1. Push this repository to GitHub.
-2. In Render, click **New → Blueprint** and select the repo.
-3. When prompted for `APPLICATION_KEY`, paste your key
-   (`a6c4c312-c270-42c8-8ae5-31759f337ecc`).
-4. Click **Apply**. Render pulls `otohits/app:latest` from Docker Hub and
-   starts the service.
+2. In Render, select **New → Blueprint**, then choose this repository.
+3. At the `APPLICATION_KEY` prompt, enter the application key from your [OtoHits Application page](https://www.otohits.net/account/app).
+4. Apply the blueprint. Render builds `Dockerfile`, starts a **Web Service**, and checks `GET /healthz`.
 
-The `render.yaml` blueprint deploys the image as a **Background Worker**
-because the OtoHits client does not serve HTTP. Render reserves "Web Service"
-for processes that must bind the `$PORT` environment variable.
+The key is declared with `sync: false`, so Render stores it as a secret instead of committing it to the repository.
 
-## Run locally with Docker
+## Verify the deployment
 
-```bash
-docker run -e APPLICATION_KEY=a6c4c312-c270-42c8-8ae5-31759f337ecc otohits/app:latest
+Once the service is live, open its Render URL:
+
+```text
+https://your-service.onrender.com/healthz
 ```
 
-## Notes
+Expected response:
 
-- Render's free tier may suspend instances; use a paid instance type if you
-  need the client running 24/7 without interruption.
-- Keep your application key private. The blueprint uses `sync: false` so the
-  key is stored as a Render secret rather than committed to Git.
+```json
+{"status":"ok","service":"otohits-client"}
+```
+
+## Important free-tier limitation
+
+Free web services can spin down after inactivity and take time to wake on the next request. That means this client is **not suitable for uninterrupted 24/7 traffic exchange on a free instance**. Use a paid always-on instance if continuous operation is required. Do not rely on automated keep-alive requests to work around hosting limits.
+
+## Local Docker run
+
+```bash
+docker build -t otohit-web .
+docker run --rm -p 10000:10000 \
+  -e PORT=10000 \
+  -e APPLICATION_KEY="your-application-key" \
+  otohit-web
+```
+
+Then visit `http://localhost:10000/healthz`.
+
+## Files
+
+- `render.yaml` — Render Blueprint configured as a free Web Service.
+- `Dockerfile` — wraps the official `otohits/app` image.
+- `healthcheck.go` — minimal port/health endpoint.
+- `docker-entrypoint.sh` — starts the listener, then executes the upstream image command.
