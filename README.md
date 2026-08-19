@@ -3,7 +3,7 @@
 Deploy the official [OtoHits](https://www.otohits.net) traffic-exchange client as a **Render Web Service**.
 
 The upstream `otohits/app` image is a background client and does not listen on an HTTP port. Render Web Services require a process that binds to `$PORT`, including on the free plan. This repository adds a tiny, public status endpoint while preserving the upstream client as the main process:
-
+   9
 - `GET /` or `GET /healthz` returns a non-sensitive JSON status response.
 - The OtoHits client still receives your `APPLICATION_KEY` normally.
 - No account data or application key is exposed by the endpoint.
